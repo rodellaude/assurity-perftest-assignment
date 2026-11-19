@@ -4,7 +4,7 @@ JMeter performance test suite for the Trade Me Sandbox Category Details endpoint
 
 ---
 
-## Project Layout
+## 1. Project Layout
 
 ```text
 assurity-perftest-assignment/
@@ -31,7 +31,7 @@ assurity-perftest-assignment/
 
 ---
 
-## Prerequisites
+## 2. Prerequisites
 
 - **Apache JMeter:** `5.6.3`
 - **Java:** JDK `8`, `11`, `17`, or `21` (LTS). JMeter 5.6.3's Groovy 3 runtime throws `Unsupported class file major version 69` on Java 25+, so make sure `JAVA_HOME` points to JDK 21 or earlier.
@@ -39,7 +39,7 @@ assurity-perftest-assignment/
 
 ---
 
-## Running the Test (Non-GUI)
+## 3. Running the Test (Non-GUI)
 
 Use `run_test.bat` from the repository root. It generates a `yyyyMMdd_HHmmss` timestamp, clears the previous `report/` folder, and writes the raw CSV results to `logs/`:
 
@@ -74,7 +74,7 @@ run_test.bat -Jusers_api_category=10 -Jrampup_api_category=10 -Jduration_api_cat
 
 ---
 
-## Assumptions
+## 4. Assumptions
 
 1. **Ramp-up + steady state:** JMeter's `ThreadGroup.duration` includes `ramp_time`, so `duration_api_category` defaults to `65` seconds (`5s` ramp-up followed by `60s` steady state).
 2. **CSV extraction on pass only:** Promotion rows are written to `logs/assurity_api_category_log_*.csv` only when all assertions pass. Failed calls are still logged in `logs/assurity_api_performance_test_results_*.csv` with their failure message.
@@ -83,10 +83,22 @@ run_test.bat -Jusers_api_category=10 -Jrampup_api_category=10 -Jduration_api_cat
 
 ---
 
-## Performance Test Report
+## 5. Performance Test Report
 
 ### Purpose
 Verify functional correctness and response time behaviour of the Trade Me Sandbox Category Details API across Category IDs `6327–6336` under the target 5-VUser load profile.
+
+### Test Details
+
+| Field | Value |
+| :--- | :--- |
+| **Test Name** | Assurity API Test Plan (`assurity_api_testplan.jmx`) |
+| **Target Endpoint** | `https://api.tmsandbox.co.nz/v1/Categories/{categoryId}/Details.json?catalogue=false` |
+| **Environment** | Local Windows, Apache JMeter `5.6.3`, JDK `21.0.13` (non-GUI mode) |
+| **Execution Timestamp** | `2026-11-19 21:17:37 NZDT` |
+| **VUsers / Ramp-Up** | `5` Threads, `5s` ramp-up (`1` VUser/sec) |
+| **Test Duration** | `65s` (`5s` ramp-up + `60s` steady state) |
+| **Target Throughput** | `600` TPH (`10` requests/min) |
 
 ### NFR Summary
 
@@ -98,7 +110,7 @@ Verify functional correctness and response time behaviour of the Trade Me Sandbo
 | **NFR-04** | 90% of responses within `500 ms` | 90th percentile = `503.2 ms` (Median: `113 ms`) | Marginal Fail (1 cold-start call) |
 
 ### Local Run Metrics (`Category - HTTP Request`)
-Raw data: [logs/assurity_api_performance_test_results_20261119_211735.csv](logs/assurity_api_performance_test_results_20261119_211735.csv) | HTML report: [report/index.html](report/index.html)
+Raw data: [logs/assurity_api_performance_test_results_20261119_211735.csv](logs/assurity_api_performance_test_results_20261119_211735.csv)
 
 | Metric | Value |
 | :--- | :--- |
@@ -134,10 +146,6 @@ Raw data: [logs/assurity_api_performance_test_results_20261119_211735.csv](logs/
 
 #### Active Users
 ![Active Users](docs/images/active_users.png)
-- Ramps to `5` active threads over the first `5` seconds (`1` VUser/sec) and holds steady at `5` VUsers for the rest of the `65s` run.
-
-#### Transaction Count by Status
-![Transaction Count by Status](docs/images/transaction_count_by_status.png)
-- `13` transactions passed (`True`) and `2` failed (`False`), giving a `13.33%` failure rate caused solely by Category `6331` failing the `CanRelist` check.
+- Ramps-up to `5` active threads over the first `5` seconds (`1` VUser/sec) and holds steady at `5` VUsers for the rest of the `65s` run.
 
 *Note: Charts above were generated in Power BI using [logs/assurity_api_performance_test_results_20261119_211735.csv](logs/assurity_api_performance_test_results_20261119_211735.csv).*
