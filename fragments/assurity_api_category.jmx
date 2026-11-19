@@ -149,13 +149,13 @@ String threadGroupName = ctx.getThreadGroup()?.getName() ?: vars.get(&quot;__thr
 
 if (threadGroupName != &quot;Debug&quot;) {
     String categoryId = rawCatId.toString()
-    String name = (jsonResponse.Name?.toString() ?: &quot;N/A&quot;).replace(&apos;&quot;&apos;, &apos;&quot;&quot;&apos;)
-    String path = (jsonResponse.Path?.toString() ?: &quot;N/A&quot;).replace(&apos;&quot;&apos;, &apos;&quot;&quot;&apos;)
+    String name = (jsonResponse.Name?.toString() ?: &quot;N/A&quot;).replace(&quot;,&quot;, &quot; &quot;)
+    String path = (jsonResponse.Path?.toString() ?: &quot;N/A&quot;).replace(&quot;,&quot;, &quot; &quot;)
     def promotions = jsonResponse.Promotions ?: []
 
-    // Resolve .../assurity-perftest-assignment/log from the executing script&apos;s base directory
+    // Resolve .../assurity-perftest-assignment/logs from the executing script&apos;s base directory
     String baseDir = FileServer.getFileServer().getBaseDir()
-    File logDir = new File(baseDir, &quot;log&quot;)
+    File logDir = new File(baseDir, &quot;logs&quot;)
     if (!logDir.exists()) {
         logDir.mkdirs()
     }
@@ -172,7 +172,7 @@ if (threadGroupName != &quot;Debug&quot;) {
 
     String runStartStamp = new SimpleDateFormat(&quot;yyyyMMdd_HHmmss&quot;).format(new Date(testStartMs))
 
-    File csvFile = new File(logDir, &quot;performance_test_results_${runStartStamp}.csv&quot;)
+    File csvFile = new File(logDir, &quot;assurity_api_category_log_${runStartStamp}.csv&quot;)
     String csvFilePath = csvFile.getAbsolutePath()
 
     synchronized(csvFilePath.intern()) {
@@ -184,10 +184,10 @@ if (threadGroupName != &quot;Debug&quot;) {
             promotions.each { promo -&gt;
                 String promoId = promo.Id?.toString() ?: &quot;N/A&quot;
                 String price = promo.Price?.toString() ?: &quot;N/A&quot;
-                csvFile.append(&quot;\&quot;${categoryId}\&quot;,\&quot;${name}\&quot;,\&quot;${path}\&quot;,\&quot;${promoId}\&quot;,\&quot;${price}\&quot;\n&quot;)
+                csvFile.append(&quot;${categoryId},${name},${path},${promoId},${price}\n&quot;)
             }
         } else {
-            csvFile.append(&quot;\&quot;${categoryId}\&quot;,\&quot;${name}\&quot;,\&quot;${path}\&quot;,\&quot;N/A\&quot;,\&quot;N/A\&quot;\n&quot;)
+            csvFile.append(&quot;${categoryId},${name},${path},N/A,N/A\n&quot;)
         }
     }
 }</stringProp>

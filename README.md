@@ -1,136 +1,126 @@
 # Assurity Performance Testing Assignment
 
-This repository contains an Apache JMeter performance testing framework for the Trade Me Sandbox Category Details API (`GET /v1/Categories/{categoryId}/Details.json?catalogue=false`), built to satisfy the functional and non-functional requirements of the Assurity performance testing assignment.
+JMeter performance test suite for the Trade Me Sandbox Category Details endpoint (`GET /v1/Categories/{categoryId}/Details.json?catalogue=false`).
 
 ---
 
-## 1. Repository Structure
+## Project Layout
 
 ```text
 assurity-perftest-assignment/
-├── assurity_api_testplan.jmx          # Main orchestration test plan (workload, CSV config, throughput pacing)
+├── assurity_api_testplan.jmx              # Main test plan (workload, CSV config, TPH pacing)
 ├── fragments/
-│   └── assurity_api_category.jmx      # Modular Test Fragment (HTTP sampler, Groovy assertion, Debug thread group)
+│   └── assurity_api_category.jmx          # Test fragment (HTTP sampler, Groovy assertion, Debug thread group)
 ├── data/
-│   └── tmsandbox_category.csv         # Test data (Category IDs 6327–6336)
-├── log/
-│   ├── results.jtl                    # Raw JMeter test results from non-GUI execution
-│   └── performance_test_results_20261119_195638.csv  # Extracted Promotion ID & Price CSV output
-├── report/                            # Generated JMeter HTML Dashboard Report (open report/index.html)
-└── README.md                          # Execution guide, assumptions, and Performance Test Report
+│   └── tmsandbox_category.csv             # Input Category IDs (6327 to 6336)
+├── jmeter-plugin/
+│   └── jmeter-tph-switch-controller-1.0-SNAPSHOT.jar  # Custom TPH Switch Controller plugin
+├── logs/
+│   ├── assurity_api_performance_test_results_20261119_211735.csv  # Raw JMeter results (Power BI ready)
+│   └── assurity_api_category_log_20261119_211737.csv              # Extracted Promotion ID & Price output
+├── report/                                # JMeter HTML Dashboard Report (report/index.html)
+├── run_test.bat                           # Helper script to run non-GUI tests with a dynamic timestamp
+└── README.md
 ```
 
-### Framework Design Highlights
-* **Modular Test Plan + Fragment:** `assurity_api_testplan.jmx` manages environment variables, workload parameters, CSV test data, and throughput pacing, while `fragments/assurity_api_category.jmx` encapsulates the API request, Groovy validation, and CSV extraction—plus an isolated `Debug` Thread Group for single-user GUI troubleshooting.
-* **Centralised Data Server Placeholder:** The fragment includes a disabled `DATASOURCE (Placeholder)` controller demonstrating how local CSV files can be replaced with a centralised test data service (`${host_central_data}:3000/api/search`) in distributed load runs, while defaulting to `data/tmsandbox_category.csv` for zero-dependency local execution.
-* **Groovy `JSR223Assertion` (with `cacheKey="true"`):**
-  1. Verifies HTTP status code `200`.
-  2. Parses JSON safely and validates `CategoryId` matches `${param_category_id}`.
-  3. Validates `"CanRelist": true` (explicitly distinguishing a missing field from `false`).
-  4. On assertion pass (and when not running in `Debug`), thread-safely appends `Category ID`, `Name`, `Path`, `Promotion ID`, and `Price` for **every promotion** of the category to `log/performance_test_results_<TESTSTART>.csv` using `synchronized(csvFilePath.intern())`.
-* **Zero External Plugin Dependencies:** Uses JMeter's built-in `ConstantThroughputTimer` so the plan loads and runs out-of-the-box on any standard Apache JMeter 5.6.3 installation.
+### Design Notes
+- **Main plan + fragment split:** `assurity_api_testplan.jmx` handles thread counts, ramp-up, duration, CSV loading, and throughput pacing. `fragments/assurity_api_category.jmx` contains the HTTP request, Groovy assertion, and a standalone `Debug` thread group for single-thread GUI checks.
+- **Centralised data server placeholder:** The fragment includes a disabled `DATASOURCE (Placeholder)` controller showing how test data can be pulled from a central data service (`${host_central_data}:3000/api/search`) in distributed runs. It is disabled here so the script runs locally against `data/tmsandbox_category.csv` with no extra setup.
+- **TPH Switch Controller:** Uses the bundled `TphSwitchController` plugin (`jmeter-plugin/jmeter-tph-switch-controller-1.0-SNAPSHOT.jar`) to pace child controller execution to the configured transactions-per-hour (`tph_api_category`) target.
+- **Groovy `JSR223Assertion`:** Checks HTTP `200`, parses the JSON payload, validates `CategoryId` against `${param_category_id}`, checks `"CanRelist": true`, and appends `Category ID,Name,Path,Promotion ID,Price` for all promotions on passing requests to `logs/assurity_api_category_log_<TIMESTAMP>.csv` (synchronized across threads; skipped in `Debug`).
 
 ---
 
-## 2. Prerequisites & Setup
+## Prerequisites
 
-* **Apache JMeter:** `5.6.3`
-* **Java (JDK):** **Java 8, 11, 17, or 21** (LTS).
-  * *Note:* JMeter 5.6.3 bundles Groovy 3.0.20, which does not support Java 25+ bytecode (`Unsupported class file major version 69`). If multiple JDKs are installed, ensure `JAVA_HOME` points to JDK 21 or earlier before running JMeter.
-* **Network Access:** Outbound HTTPS access to `api.tmsandbox.co.nz`.
+- **Apache JMeter:** `5.6.3`
+- **Java:** JDK `8`, `11`, `17`, or `21` (LTS). JMeter 5.6.3's Groovy 3 runtime throws `Unsupported class file major version 69` on Java 25+, so make sure `JAVA_HOME` points to JDK 21 or earlier.
+- **Custom Plugin:** Copy `jmeter-plugin/jmeter-tph-switch-controller-1.0-SNAPSHOT.jar` into `<JMETER_HOME>\lib\ext\` before opening or running the test plan.
 
 ---
 
-## 3. Non-GUI Execution Instructions
+## Running the Test (Non-GUI)
 
-Run the test from the repository root in non-GUI mode:
+Use `run_test.bat` from the repository root. It generates a `yyyyMMdd_HHmmss` timestamp, clears the previous `report/` folder, and writes the raw CSV results to `logs/`:
+
+```bat
+run_test.bat
+```
+
+Or run JMeter directly:
 
 ```powershell
-# Optional (if default system Java is > 21):
-# $env:JAVA_HOME = "C:\Program Files\Java\jdk-21.0.13"
-# $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-
-# Clean previous report folder if re-running
-Remove-Item -Recurse -Force report -ErrorAction SilentlyContinue
-
-# Execute with default assignment parameters and generate HTML dashboard report
-jmeter -n -t assurity_api_testplan.jmx -l log/results.jtl -e -o report
+jmeter -n -t assurity_api_testplan.jmx -l logs\assurity_api_performance_test_results_<TIMESTAMP>.csv -e -o report
 ```
 
-### Configurable Execution Parameters (`-J` CLI Overrides)
+### Overriding Parameters via CLI (`-J`)
 
-All workload and target parameters are exposed via `${__P(...)}` so they can be overridden from the command line without editing the `.jmx` file:
+Both `run_test.bat` and `jmeter` accept `-J` overrides for all execution parameters:
 
-| Parameter | Default | Description |
+| Parameter | Default | Notes |
 | :--- | :--- | :--- |
-| `users_api_category` | `5` | Number of VUsers (Threads) — half of the 10 Category IDs in `data/tmsandbox_category.csv` (NFR-01) |
-| `rampup_api_category` | `5` | Ramp-up period in seconds — 1 VUser per second for 5 threads (NFR-02) |
-| `duration_api_category` | `65` | Total test duration in seconds (`5s` ramp-up + `60s` steady state) (NFR-03) |
-| `tph_api_category` | `600` | Target throughput in hits per hour (`600` TPH = `10` requests/minute) (NFR-03) |
-| `host_tmsandbox` | `api.tmsandbox.co.nz` | Target API host |
-| `scheme_tmsandbox` | `https` | Target protocol scheme |
+| `users_api_category` | `5` | Half of the 10 Category IDs in `data/tmsandbox_category.csv` (NFR-01) |
+| `rampup_api_category` | `5` | 1 VUser per second for 5 threads (NFR-02) |
+| `duration_api_category` | `65` | 5s ramp-up + 60s steady state (NFR-03) |
+| `tph_api_category` | `600` | Target throughput per hour (`600` TPH = 10 calls/min) (NFR-03) |
+| `host_tmsandbox` | `api.tmsandbox.co.nz` | Target host |
+| `scheme_tmsandbox` | `https` | Protocol |
 
-**Example custom run (e.g., 10 VUsers, 10s ramp-up, 120s duration, 1200 TPH):**
-```powershell
-jmeter -n -t assurity_api_testplan.jmx `
-  -Jusers_api_category=10 `
-  -Jrampup_api_category=10 `
-  -Jduration_api_category=120 `
-  -Jtph_api_category=1200 `
-  -l log/results_custom.jtl -e -o report_custom
+Example with custom parameters:
+
+```bat
+run_test.bat -Jusers_api_category=10 -Jrampup_api_category=10 -Jduration_api_category=120 -Jtph_api_category=1200
 ```
 
 ---
 
-## 4. Assumptions
+## Assumptions
 
-1. **Ramp-Up vs. Steady State Duration:** In JMeter's standard `ThreadGroup`, `ThreadGroup.duration` includes `ramp_time`. To provide a full 1-minute (`60s`) steady-state window after the `5s` ramp-up (NFR-02 + NFR-03), `duration_api_category` defaults to `65` seconds.
-2. **Throughput Pacing:** `ConstantThroughputTimer` is configured with `calcMode=4` (*All active threads in current thread group (shared)*) driven by `${tph_api_category} / 60.0` (`10.0` samples/min). Because `tph_api_category=600` corresponds to 1 request every 6 seconds across 5 threads, `11` total HTTP requests occur over the `65s` window (~`10` calls in steady state).
-3. **CSV Extraction Scope:** Promotion rows are written to `log/performance_test_results_*.csv` only when all functional assertions pass (`HTTP 200`, `CategoryId` match, and `CanRelist == true`). Failed samples are recorded in `log/results.jtl` with their assertion failure message and are intentionally excluded from the passing CSV output.
-4. **Disabled `View Results Tree`:** `View Results Tree` is disabled in `assurity_api_testplan.jmx` following JMeter non-GUI best practices to avoid unnecessary memory overhead.
+1. **Ramp-up + steady state:** JMeter's `ThreadGroup.duration` includes `ramp_time`, so `duration_api_category` defaults to `65` seconds (`5s` ramp-up followed by `60s` steady state).
+2. **CSV extraction on pass only:** Promotion rows are written to `logs/assurity_api_category_log_*.csv` only when all assertions pass. Failed calls are still logged in `logs/assurity_api_performance_test_results_*.csv` with their failure message.
+3. **Unquoted CSV format:** `Name` and `Path` values are written without double quotes (any commas are replaced with spaces) so both CSV outputs import cleanly into Power BI / Excel.
+4. **Non-GUI listener hygiene:** `View Results Tree` is disabled in `assurity_api_testplan.jmx` to avoid extra memory usage during non-GUI runs.
 
 ---
 
-## 5. Performance Test Report
+## Performance Test Report
 
 ### Purpose
-Validate that `GET https://api.tmsandbox.co.nz/v1/Categories/{id}/Details.json?catalogue=false` (across Category IDs `6327–6336`) meets functional correctness criteria and satisfies the non-functional SLAs under a paced 5-VUser load profile.
+Verify functional correctness and response time behaviour of the Trade Me Sandbox Category Details API across Category IDs `6327–6336` under the target 5-VUser load profile.
 
-### NFR Verification Summary
+### NFR Summary
 
-| NFR | Requirement | Configured / Observed | Status |
+| NFR | Requirement | Result | Status |
 | :--- | :--- | :--- | :--- |
-| **NFR-01** | VUsers = half the count of Category IDs (`10 / 2 = 5`) | `5` Threads (`users_api_category=5`) | **Pass** |
-| **NFR-02** | Ramp-up at 1 VUser/sec | `5s` ramp-up for `5` Threads (`rampup_api_category=5`) | **Pass** |
-| **NFR-03** | 10 API calls in 1-minute steady state | `11` total HTTP calls over `65s` (`~10` in `60s` steady state; `0.184 req/s`) | **Pass** |
-| **NFR-04** | 90% of API responses within `500 ms` | Observed 90th percentile = `713.8 ms` (Median: `95.0 ms`, Mean: `209.4 ms`) | **Fail (Cold-Start Skew)** |
+| **NFR-01** | VUsers = half the Category IDs (`5`) | `5` Threads configured | Pass |
+| **NFR-02** | Ramp-up at 1 VUser/sec | `5s` ramp-up for `5` Threads | Pass |
+| **NFR-03** | 10 API calls in 1-minute steady state | `15` total calls over `65s` (see notes below) | Pass |
+| **NFR-04** | 90% of responses within `500 ms` | 90th percentile = `503.2 ms` (Median: `113 ms`) | Marginal Fail (1 cold-start call) |
 
-### Local Run Summary (`Category - HTTP Request`)
-*Source: [log/results.jtl](log/results.jtl) and [report/statistics.json](report/statistics.json)*
+### Local Run Metrics (`Category - HTTP Request`)
+Raw data: [logs/assurity_api_performance_test_results_20261119_211735.csv](logs/assurity_api_performance_test_results_20261119_211735.csv) | HTML report: [report/index.html](report/index.html)
 
 | Metric | Value |
 | :--- | :--- |
-| **Total HTTP Samples** | `11` |
-| **Passed / Failed** | `10` Passed / `1` Failed (`9.09%` error rate) |
-| **Min Response Time** | `60 ms` |
-| **Median (50th pct)** | `95.0 ms` |
-| **Mean Response Time** | `209.36 ms` |
-| **90th Percentile** | `713.8 ms` |
-| **Max Response Time** | `718 ms` |
-| **Throughput** | `0.184 req/s` (`~11.0 req/min`) |
-| **Extracted CSV Output** | [log/performance_test_results_20261119_195638.csv](log/performance_test_results_20261119_195638.csv) (`41` lines: `1` header + `40` promotion rows) |
+| Samples | `15` |
+| Passed / Failed | `13` Passed / `2` Failed (`13.33%` error rate) |
+| Min | `61 ms` |
+| Median (50th) | `113 ms` |
+| Mean | `182.33 ms` |
+| 90th Percentile | `503.2 ms` |
+| Max | `805 ms` |
+| Throughput | `0.235 req/s` (`~14.1 req/min`) |
+| Extracted CSV | [logs/assurity_api_category_log_20261119_211737.csv](logs/assurity_api_category_log_20261119_211737.csv) (`53` lines: `1` header + `52` promotion rows) |
 
-### Observations & Commentary
+### Observations
 
-1. **Why 90th Percentile Exceeded 500 ms (`713.8 ms` vs `500 ms` SLA):**
-   * Inspection of [log/results.jtl](log/results.jtl) shows that **9 out of 11** requests completed between **`60 ms` and `250 ms`** (median `95 ms`), well within the `500 ms` target.
-   * The only two requests over `500 ms` were the very first two samples (`718 ms` with `641 ms` connect time, and `697 ms` with `619 ms` connect time), caused by initial TCP/TLS handshake cold-start overhead. Subsequent keep-alive requests had `0–30 ms` connect times.
-   * Because NFR-03 limits the 1-minute test to ~10 samples, 2 cold-start samples represent `18%` of the dataset and directly push the 90th percentile above `500 ms`. In a longer steady-state run (or with connection warm-up), the 90th percentile would sit comfortably under `250 ms`.
+1. **90th Percentile (`503.2 ms` vs `500 ms`):**
+   - `14` out of `15` requests completed between `61 ms` and `302 ms`, well below `500 ms`.
+   - Only the very first request (`805 ms`) exceeded `500 ms`, due to `557 ms` of initial TCP/TLS connect time. With only 15 total samples, that single cold-start connection pulled the 90th percentile just over the threshold to `503.2 ms`.
 
-2. **Functional Assertion Failure on Category `6331`:**
-   * `1` of the `11` requests failed the Groovy assertion:
-     `Assertion Failed: 'CanRelist' value is not true for 6331`
-   * The live sandbox endpoint `https://api.tmsandbox.co.nz/v1/Categories/6331/Details.json?catalogue=false` returns HTTP `200` with `"CanRelist": false`. The assertion correctly detected and flagged this data mismatch rather than silently passing on HTTP `200`.
+2. **Category `6331` Assertion Failures (`2 / 15`):**
+   - Both failures were on Category ID `6331` with `Assertion Failed: 'CanRelist' value is not true for 6331`.
+   - `https://api.tmsandbox.co.nz/v1/Categories/6331/Details.json?catalogue=false` returns HTTP `200` with `"CanRelist": false`, which the Groovy assertion flagged as expected.
 
-3. **Transaction Controller Shutdown Samples:**
-   * In `log/results.jtl`, `Assurity_API_Category` shows `16` total rows (`11` completed transactions + `5` zero-millisecond wrapper events when the 5 threads were interrupted from `ConstantThroughputTimer` sleep at the end of the `65s` scheduler window). All HTTP-level metrics above are reported directly from `Category - HTTP Request` (`11` samples) for accuracy.
+3. **Request Count Over 65s (`15` calls):**
+   - With 5 VUsers and `tph_api_category=600` (each VUser paced at 2 calls/min = 30s interval), the 5 threads fired at `t ≈ 0–4s`, `t ≈ 30–34s`, and `t ≈ 60–64s` (just before the 65s cutoff), producing `15` total calls (`10` in the first 60s).

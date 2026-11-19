@@ -133,7 +133,7 @@ $(document).ready(function() {
         widgets: ['zebra']
     });
 
-    var data = {"OkPercent": 93.75, "KoPercent": 6.25};
+    var data = {"OkPercent": 86.66666666666667, "KoPercent": 13.333333333333334};
     var dataset = [
         {
             "label" : "FAIL",
@@ -173,7 +173,7 @@ $(document).ready(function() {
     });
 
     // Creates APDEX table
-    createTable($("#apdexTable"), {"supportsControllersDiscrimination": true, "overall": {"data": [0.8518518518518519, 500, 1500, "Total"], "isController": false}, "titles": ["Apdex", "T (Toleration threshold)", "F (Frustration threshold)", "Label"], "items": [{"data": [0.8181818181818182, 500, 1500, "Category - HTTP Request"], "isController": false}, {"data": [0.875, 500, 1500, "Assurity_API_Category"], "isController": true}]}, function(index, item){
+    createTable($("#apdexTable"), {"supportsControllersDiscrimination": true, "overall": {"data": [0.8333333333333334, 500, 1500, "Total"], "isController": false}, "titles": ["Apdex", "T (Toleration threshold)", "F (Frustration threshold)", "Label"], "items": [{"data": [0.8333333333333334, 500, 1500, "Category - HTTP Request"], "isController": false}, {"data": [0.8333333333333334, 500, 1500, "Assurity_API_Category"], "isController": true}]}, function(index, item){
         switch(index){
             case 0:
                 item = item.toFixed(3);
@@ -187,7 +187,7 @@ $(document).ready(function() {
     }, [[0, 0]], 3);
 
     // Create statistics table
-    createTable($("#statisticsTable"), {"supportsControllersDiscrimination": true, "overall": {"data": ["Total", 16, 1, 6.25, 143.93750000000003, 0, 718, 68.5, 703.3000000000001, 718.0, 718.0, 0.26799772201936284, 0.5395940462631068, 0.030408188796020235], "isController": false}, "titles": ["Label", "#Samples", "FAIL", "Error %", "Average", "Min", "Max", "Median", "90th pct", "95th pct", "99th pct", "Transactions/s", "Received", "Sent"], "items": [{"data": ["Category - HTTP Request", 11, 1, 9.090909090909092, 209.36363636363635, 60, 718, 95.0, 713.8000000000001, 718.0, 718.0, 0.18426386585590565, 0.5396392406653601, 0.03041073567348443], "isController": false}, {"data": ["Assurity_API_Category", 16, 1, 6.25, 143.93750000000003, 0, 718, 68.5, 703.3000000000001, 718.0, 718.0, 0.2638043890455228, 0.5311510733541079, 0.02993239497287761], "isController": true}]}, function(index, item){
+    createTable($("#statisticsTable"), {"supportsControllersDiscrimination": true, "overall": {"data": ["Total", 15, 2, 13.333333333333334, 182.33333333333334, 61, 805, 113.0, 503.20000000000016, 805.0, 805.0, 0.234815278647464, 0.6781667041718847, 0.038753693448653724], "isController": false}, "titles": ["Label", "#Samples", "FAIL", "Error %", "Average", "Min", "Max", "Median", "90th pct", "95th pct", "99th pct", "Transactions/s", "Received", "Sent"], "items": [{"data": ["Category - HTTP Request", 15, 2, 13.333333333333334, 182.33333333333334, 61, 805, 113.0, 503.20000000000016, 805.0, 805.0, 0.234815278647464, 0.6781667041718847, 0.038753693448653724], "isController": false}, {"data": ["Assurity_API_Category", 15, 2, 13.333333333333334, 182.33333333333334, 61, 805, 113.0, 503.20000000000016, 805.0, 805.0, 0.23427982382157247, 0.676620264619061, 0.038665322486177496], "isController": true}]}, function(index, item){
         switch(index){
             // Errors pct
             case 3:
@@ -217,7 +217,7 @@ $(document).ready(function() {
     }, [[0, 0]], 0, summaryTableHeader);
 
     // Create error table
-    createTable($("#errorsTable"), {"supportsControllersDiscrimination": false, "titles": ["Type of error", "Number of errors", "% in errors", "% in all samples"], "items": [{"data": ["Assertion Failed: 'CanRelist' value is not true for 6331", 1, 100.0, 6.25], "isController": false}]}, function(index, item){
+    createTable($("#errorsTable"), {"supportsControllersDiscrimination": false, "titles": ["Type of error", "Number of errors", "% in errors", "% in all samples"], "items": [{"data": ["Assertion Failed: 'CanRelist' value is not true for 6331", 2, 100.0, 13.333333333333334], "isController": false}]}, function(index, item){
         switch(index){
             case 2:
             case 3:
@@ -228,7 +228,7 @@ $(document).ready(function() {
     }, [[1, 1]]);
 
         // Create top5 errors by sampler
-    createTable($("#top5ErrorsBySamplerTable"), {"supportsControllersDiscrimination": false, "overall": {"data": ["Total", 16, 1, "Assertion Failed: 'CanRelist' value is not true for 6331", 1, "", "", "", "", "", "", "", ""], "isController": false}, "titles": ["Sample", "#Samples", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors"], "items": [{"data": ["Category - HTTP Request", 11, 1, "Assertion Failed: 'CanRelist' value is not true for 6331", 1, "", "", "", "", "", "", "", ""], "isController": false}, {"data": [], "isController": false}]}, function(index, item){
+    createTable($("#top5ErrorsBySamplerTable"), {"supportsControllersDiscrimination": false, "overall": {"data": ["Total", 15, 2, "Assertion Failed: 'CanRelist' value is not true for 6331", 2, "", "", "", "", "", "", "", ""], "isController": false}, "titles": ["Sample", "#Samples", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors", "Error", "#Errors"], "items": [{"data": ["Category - HTTP Request", 15, 2, "Assertion Failed: 'CanRelist' value is not true for 6331", 2, "", "", "", "", "", "", "", ""], "isController": false}, {"data": [], "isController": false}]}, function(index, item){
         return item;
     }, [[0, 0]], 0);
 
