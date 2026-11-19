@@ -11,7 +11,13 @@
     <hashTree>
       <TestFragmentController guiclass="TestFragmentControllerGui" testclass="TestFragmentController" testname="Category - Test Fragment" enabled="false"/>
       <hashTree>
-        <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="DATASOURCE" enabled="false"/>
+        <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="DATASOURCE (Placeholder)" enabled="false">
+          <stringProp name="TestPlan.comments">Purpose: Replaces local CSV Data Set Config files with a centralised test data server so threads, load generators, and test runs can retrieve test records dynamically without local file path dependencies or contention.
+
+Retrieves test data from the centralised data server (${host_central_data}:3000) via child samplers calling /api/search (e.g., dataset tmsandbox_category.csv) and extracts target fields into JMeter variables (such as param_category_id) for downstream requests.
+
+Note: To ensure you can easily run and review this script locally without needing to spin up the centralised data server, I have included a local CSV Data Set Config and disabled the centralised sampler.</stringProp>
+        </GenericController>
         <hashTree>
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="tmsandbox_category.csv" enabled="true">
             <stringProp name="HTTPSampler.domain">${host_central_data}</stringProp>
@@ -59,12 +65,12 @@
             <hashTree/>
           </hashTree>
         </hashTree>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="${__threadGroupName}_Category" enabled="true">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="${__threadGroupName}_Category">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Category - HTTP Request">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Category - HTTP Request" enabled="true">
             <stringProp name="HTTPSampler.domain">${host_tmsandbox}</stringProp>
             <stringProp name="HTTPSampler.protocol">${scheme_tmsandbox}</stringProp>
             <stringProp name="HTTPSampler.path">/v1/Categories/${param_category_id}/Details.json?catalogue=false</stringProp>
@@ -77,11 +83,13 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="Category - JSR223 Assertion">
+            <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="Category - JSR223 Assertion" enabled="true">
               <stringProp name="cacheKey">true</stringProp>
               <stringProp name="filename"></stringProp>
               <stringProp name="parameters"></stringProp>
               <stringProp name="script">import groovy.json.JsonSlurper
+import org.apache.jmeter.services.FileServer
+import java.text.SimpleDateFormat
 
 // 1. Response Status Assertion
 def responseCode = prev.getResponseCode().toString()
@@ -104,15 +112,16 @@ try {
     return
 }
 
-// 2. Cascading Category ID Check (Missing field -&gt; Value match)
+// 2. Category ID Check
 def rawCatId = jsonResponse.CategoryId ?: jsonResponse.Id
-if (rawCatId == null) {
+
+if (rawCatId == null) { // CategoryId field is null
     AssertionResult.setFailure(true)
-    AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CategoryId&apos; field is missing from the response.&quot;)
+    AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CategoryId&apos; field is missing from the response for &quot; + vars.get(&quot;param_category_id&quot;))
     return
-} else {
+} else { // If CategoryId field is not null
     String expectedCatId = vars.get(&quot;param_category_id&quot;)
-    if (expectedCatId != null &amp;&amp; !expectedCatId.isEmpty()) {
+    if (expectedCatId != null &amp;&amp; !expectedCatId.isEmpty()) { // If param_category_id not null but does not match the CategoryId value
         String actualCatId = rawCatId.toString()
         if (actualCatId != expectedCatId) {
             AssertionResult.setFailure(true)
@@ -123,79 +132,67 @@ if (rawCatId == null) {
 }
 
 // 3. Cascading CanRelist Check (Missing field -&gt; Value true check)
-if (jsonResponse.CanRelist == null) {
+if (jsonResponse.CanRelist == null) { // CanRelist field is null
     AssertionResult.setFailure(true)
-    AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CanRelist&apos; field is missing from the response.&quot;)
+    AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CanRelist&apos; field is missing from the response for &quot; + vars.get(&quot;param_category_id&quot;))
     return
-} else {
-    if (jsonResponse.CanRelist != true) {
+} else { // If CanRelist field is not null
+    if (jsonResponse.CanRelist != true) { // // If CanRelist is not null but has value equals to &apos;false&apos;
         AssertionResult.setFailure(true)
-        AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CanRelist&apos; value is not true.&quot;)
+        AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CanRelist&apos; value is not true for &quot; + vars.get(&quot;param_category_id&quot;))
         return
     }
 }
 
-// 4. Extract Data and Write to CSV
-String categoryId = rawCatId.toString()
-String name = jsonResponse.Name?.toString() ?: &quot;N/A&quot;
-String path = jsonResponse.Path?.toString() ?: &quot;N/A&quot;
+// 4. Extract Data and Write to CSV (only when running in the &quot;main&quot; script)
+String threadGroupName = ctx.getThreadGroup()?.getName() ?: vars.get(&quot;__threadGroupName&quot;)?.toString() ?: &quot;&quot;
 
-// Handle promotions (if the API returns a list of promotions with IDs and prices)
-def promotions = jsonResponse.Promotions ?: []
+if (threadGroupName != &quot;Debug&quot;) {
+    String categoryId = rawCatId.toString()
+    String name = (jsonResponse.Name?.toString() ?: &quot;N/A&quot;).replace(&apos;&quot;&apos;, &apos;&quot;&quot;&apos;)
+    String path = (jsonResponse.Path?.toString() ?: &quot;N/A&quot;).replace(&apos;&quot;&apos;, &apos;&quot;&quot;&apos;)
+    def promotions = jsonResponse.Promotions ?: []
 
-// Define CSV File path (saved in JMeter&apos;s current working directory or absolute path)
-String csvFilePath = &quot;performance_test_results.csv&quot;
-File csvFile = new File(csvFilePath)
-
-synchronized(this) {
-    // If file doesn&apos;t exist, write the header
-    if (!csvFile.exists()) {
-        csvFile.text = &quot;Category ID,Name,Path,Promotion ID,Price\n&quot;
+    // Resolve .../assurity-perftest-assignment/log from the executing script&apos;s base directory
+    String baseDir = FileServer.getFileServer().getBaseDir()
+    File logDir = new File(baseDir, &quot;log&quot;)
+    if (!logDir.exists()) {
+        logDir.mkdirs()
     }
 
-    // Append rows (if there are promotions, write one row per promotion; otherwise write one row with N/A promotion details)
-    if (promotions.size() &gt; 0) {
-        promotions.each { promo -&gt;
-            String promoId = promo.Id?.toString() ?: &quot;N/A&quot;
-            String price = promo.Price?.toString() ?: &quot;N/A&quot;
-            csvFile.append(&quot;\&quot;${categoryId}\&quot;,\&quot;${name}\&quot;,\&quot;${path}\&quot;,\&quot;${promoId}\&quot;,\&quot;${price}\&quot;\n&quot;)
+    // Use JMeter&apos;s TESTSTART.MS property for consistent run-start timestamp suffix
+    String testStartStr = props.get(&quot;TESTSTART.MS&quot;)
+
+    long testStartMs
+    try {
+        testStartMs = (testStartStr != null &amp;&amp; testStartStr.isLong()) ? testStartStr.toLong() : System.currentTimeMillis()
+    } catch (Exception e) {
+        testStartMs = System.currentTimeMillis()
+    }
+
+    String runStartStamp = new SimpleDateFormat(&quot;yyyyMMdd_HHmmss&quot;).format(new Date(testStartMs))
+
+    File csvFile = new File(logDir, &quot;performance_test_results_${runStartStamp}.csv&quot;)
+    String csvFilePath = csvFile.getAbsolutePath()
+
+    synchronized(csvFilePath.intern()) {
+        if (!csvFile.exists()) {
+            csvFile.text = &quot;Category ID,Name,Path,Promotion ID,Price\n&quot;
         }
-    } else {
-        csvFile.append(&quot;\&quot;${categoryId}\&quot;,\&quot;${name}\&quot;,\&quot;${path}\&quot;,\&quot;N/A\&quot;,\&quot;N/A\&quot;\n&quot;)
+
+        if (promotions.size() &gt; 0) {
+            promotions.each { promo -&gt;
+                String promoId = promo.Id?.toString() ?: &quot;N/A&quot;
+                String price = promo.Price?.toString() ?: &quot;N/A&quot;
+                csvFile.append(&quot;\&quot;${categoryId}\&quot;,\&quot;${name}\&quot;,\&quot;${path}\&quot;,\&quot;${promoId}\&quot;,\&quot;${price}\&quot;\n&quot;)
+            }
+        } else {
+            csvFile.append(&quot;\&quot;${categoryId}\&quot;,\&quot;${name}\&quot;,\&quot;${path}\&quot;,\&quot;N/A\&quot;,\&quot;N/A\&quot;\n&quot;)
+        }
     }
 }</stringProp>
               <stringProp name="scriptLanguage">groovy</stringProp>
             </JSR223Assertion>
-            <hashTree/>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP Code 200 - Response Assertion" enabled="false">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="49586">200</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message">Assertion Failed: Response status code is not 200 for ${param_category_id}.</stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">8</intProp>
-            </ResponseAssertion>
-            <hashTree/>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="param_category_id - Response Assertion" enabled="false">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="979521418">${param_category_id}</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message">Text ${param_category_id} is not found for ${param_category_id}.</stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">16</intProp>
-            </ResponseAssertion>
-            <hashTree/>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="CanRelist - Response Assertion" enabled="false">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="2134361573">&quot;CanRelist&quot;:true</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message">Text &apos;&quot;CanRelist&quot;: true&apos; is not found for ${param_category_id}.</stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">16</intProp>
-            </ResponseAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
@@ -231,7 +228,7 @@ synchronized(this) {
           </collectionProp>
         </Arguments>
         <hashTree/>
-        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV Data Set Config">
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV Data Set Config" enabled="true">
           <stringProp name="delimiter">,</stringProp>
           <stringProp name="fileEncoding"></stringProp>
           <stringProp name="filename">../data/tmsandbox_category.csv</stringProp>
@@ -243,7 +240,7 @@ synchronized(this) {
           <stringProp name="variableNames">param_category_id</stringProp>
         </CSVDataSet>
         <hashTree/>
-        <ModuleController guiclass="ModuleControllerGui" testclass="ModuleController" testname="Module Controller">
+        <ModuleController guiclass="ModuleControllerGui" testclass="ModuleController" testname="Module Controller" enabled="true">
           <collectionProp name="ModuleController.node_path">
             <stringProp name="764597751">Test Plan</stringProp>
             <stringProp name="-1453577828">Assurity API Category Fragment</stringProp>
