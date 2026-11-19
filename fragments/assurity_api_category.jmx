@@ -115,13 +115,13 @@ try {
 // 2. Category ID Check
 def rawCatId = jsonResponse.CategoryId ?: jsonResponse.Id
 
-if (rawCatId == null) { // CategoryId field is null
+if (rawCatId == null) {
     AssertionResult.setFailure(true)
     AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CategoryId&apos; field is missing from the response for &quot; + vars.get(&quot;param_category_id&quot;))
     return
-} else { // If CategoryId field is not null
+} else {
     String expectedCatId = vars.get(&quot;param_category_id&quot;)
-    if (expectedCatId != null &amp;&amp; !expectedCatId.isEmpty()) { // If param_category_id not null but does not match the CategoryId value
+    if (expectedCatId != null &amp;&amp; !expectedCatId.isEmpty()) {
         String actualCatId = rawCatId.toString()
         if (actualCatId != expectedCatId) {
             AssertionResult.setFailure(true)
@@ -131,13 +131,13 @@ if (rawCatId == null) { // CategoryId field is null
     }
 }
 
-// 3. Cascading CanRelist Check (Missing field -&gt; Value true check)
-if (jsonResponse.CanRelist == null) { // CanRelist field is null
+// 3. CanRelist Check
+if (jsonResponse.CanRelist == null) {
     AssertionResult.setFailure(true)
     AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CanRelist&apos; field is missing from the response for &quot; + vars.get(&quot;param_category_id&quot;))
     return
-} else { // If CanRelist field is not null
-    if (jsonResponse.CanRelist != true) { // // If CanRelist is not null but has value equals to &apos;false&apos;
+} else {
+    if (jsonResponse.CanRelist != true) {
         AssertionResult.setFailure(true)
         AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CanRelist&apos; value is not true for &quot; + vars.get(&quot;param_category_id&quot;))
         return
