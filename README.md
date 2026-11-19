@@ -124,3 +124,20 @@ Raw data: [logs/assurity_api_performance_test_results_20261119_211735.csv](logs/
 
 3. **Request Count Over 65s (`15` calls):**
    - With 5 VUsers and `tph_api_category=600` (each VUser paced at 2 calls/min = 30s interval), the 5 threads fired at `t ≈ 0–4s`, `t ≈ 30–34s`, and `t ≈ 60–64s` (just before the 65s cutoff), producing `15` total calls (`10` in the first 60s).
+
+### Charts
+#### Response Times vs 500ms SLA over time
+![Response Times vs 500ms SLA over time](docs/images/response_time_by_status_over_time.png)
+- Only the first request (`805 ms` at `t = 0s`) crossed the `500 ms` SLA line due to initial TCP/TLS connect time (`557 ms`).
+- The remaining `14` requests stayed well below `500 ms` (`61–302 ms`), arriving in three 5-call bursts (`t = 0–4s`, `30–34s`, and `60–64s`).
+- Both failed (`False`) points at `t ≈ 32s` and `t ≈ 64s` are Category `6331`, which returns `"CanRelist": false`.
+
+#### Active Users
+![Active Users](docs/images/active_users.png)
+- Ramps to `5` active threads over the first `5` seconds (`1` VUser/sec) and holds steady at `5` VUsers for the rest of the `65s` run.
+
+#### Transaction Count by Status
+![Transaction Count by Status](docs/images/transaction_count_by_status.png)
+- `13` transactions passed (`True`) and `2` failed (`False`), giving a `13.33%` failure rate caused solely by Category `6331` failing the `CanRelist` check.
+
+*Note: Charts above were generated in Power BI using [logs/assurity_api_performance_test_results_20261119_211735.csv](logs/assurity_api_performance_test_results_20261119_211735.csv).*
