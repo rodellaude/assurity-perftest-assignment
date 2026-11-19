@@ -5,13 +5,15 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
     </TestPlan>
     <hashTree>
       <TestFragmentController guiclass="TestFragmentControllerGui" testclass="TestFragmentController" testname="Category - Test Fragment" enabled="false"/>
       <hashTree>
         <GenericController guiclass="LogicControllerGui" testclass="GenericController" testname="DATASOURCE" enabled="false"/>
         <hashTree>
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="tmsandbox_category.csv">
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="tmsandbox_category.csv" enabled="true">
             <stringProp name="HTTPSampler.domain">${host_central_data}</stringProp>
             <stringProp name="HTTPSampler.port">3000</stringProp>
             <stringProp name="HTTPSampler.protocol">http</stringProp>
@@ -40,7 +42,7 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Hide this sampler">
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Hide this sampler" enabled="true">
               <stringProp name="cacheKey">true</stringProp>
               <stringProp name="filename"></stringProp>
               <stringProp name="parameters"></stringProp>
@@ -48,7 +50,7 @@
               <stringProp name="scriptLanguage">groovy</stringProp>
             </JSR223PostProcessor>
             <hashTree/>
-            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="JSON Extractor - param_category_id">
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="JSON Extractor - param_category_id" enabled="true">
               <stringProp name="JSONPostProcessor.referenceNames">param_category_id</stringProp>
               <stringProp name="JSONPostProcessor.jsonPathExprs">$..category_id</stringProp>
               <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
@@ -57,7 +59,7 @@
             <hashTree/>
           </hashTree>
         </hashTree>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="${__threadGroupName}_Category">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="${__threadGroupName}_Category" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
@@ -75,7 +77,107 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="param_category_id - Response Assertion">
+            <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="Category - JSR223 Assertion">
+              <stringProp name="cacheKey">true</stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="script">import groovy.json.JsonSlurper
+
+// 1. Response Status Assertion
+def responseCode = prev.getResponseCode().toString()
+if (responseCode != &quot;200&quot;) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage(&quot;Assertion Failed: Response status code is &quot; + responseCode)
+    return
+}
+
+String responseStr = prev.getResponseDataAsString()
+
+// Parse JSON response
+def jsonSlurper = new JsonSlurper()
+def jsonResponse
+try {
+    jsonResponse = jsonSlurper.parseText(responseStr)
+} catch (Exception e) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage(&quot;Assertion Failed: Unable to parse JSON response - &quot; + e.getMessage())
+    return
+}
+
+// 2. Cascading Category ID Check (Missing field -&gt; Value match)
+def rawCatId = jsonResponse.CategoryId ?: jsonResponse.Id
+if (rawCatId == null) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CategoryId&apos; field is missing from the response.&quot;)
+    return
+} else {
+    String expectedCatId = vars.get(&quot;param_category_id&quot;)
+    if (expectedCatId != null &amp;&amp; !expectedCatId.isEmpty()) {
+        String actualCatId = rawCatId.toString()
+        if (actualCatId != expectedCatId) {
+            AssertionResult.setFailure(true)
+            AssertionResult.setFailureMessage(&quot;Assertion Failed: Category ID mismatch. Expected: ${expectedCatId}, Actual: ${actualCatId}&quot;)
+            return
+        }
+    }
+}
+
+// 3. Cascading CanRelist Check (Missing field -&gt; Value true check)
+if (jsonResponse.CanRelist == null) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CanRelist&apos; field is missing from the response.&quot;)
+    return
+} else {
+    if (jsonResponse.CanRelist != true) {
+        AssertionResult.setFailure(true)
+        AssertionResult.setFailureMessage(&quot;Assertion Failed: &apos;CanRelist&apos; value is not true.&quot;)
+        return
+    }
+}
+
+// 4. Extract Data and Write to CSV
+String categoryId = rawCatId.toString()
+String name = jsonResponse.Name?.toString() ?: &quot;N/A&quot;
+String path = jsonResponse.Path?.toString() ?: &quot;N/A&quot;
+
+// Handle promotions (if the API returns a list of promotions with IDs and prices)
+def promotions = jsonResponse.Promotions ?: []
+
+// Define CSV File path (saved in JMeter&apos;s current working directory or absolute path)
+String csvFilePath = &quot;performance_test_results.csv&quot;
+File csvFile = new File(csvFilePath)
+
+synchronized(this) {
+    // If file doesn&apos;t exist, write the header
+    if (!csvFile.exists()) {
+        csvFile.text = &quot;Category ID,Name,Path,Promotion ID,Price\n&quot;
+    }
+
+    // Append rows (if there are promotions, write one row per promotion; otherwise write one row with N/A promotion details)
+    if (promotions.size() &gt; 0) {
+        promotions.each { promo -&gt;
+            String promoId = promo.Id?.toString() ?: &quot;N/A&quot;
+            String price = promo.Price?.toString() ?: &quot;N/A&quot;
+            csvFile.append(&quot;\&quot;${categoryId}\&quot;,\&quot;${name}\&quot;,\&quot;${path}\&quot;,\&quot;${promoId}\&quot;,\&quot;${price}\&quot;\n&quot;)
+        }
+    } else {
+        csvFile.append(&quot;\&quot;${categoryId}\&quot;,\&quot;${name}\&quot;,\&quot;${path}\&quot;,\&quot;N/A\&quot;,\&quot;N/A\&quot;\n&quot;)
+    }
+}</stringProp>
+              <stringProp name="scriptLanguage">groovy</stringProp>
+            </JSR223Assertion>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="HTTP Code 200 - Response Assertion" enabled="false">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="49586">200</stringProp>
+              </collectionProp>
+              <stringProp name="Assertion.custom_message">Assertion Failed: Response status code is not 200 for ${param_category_id}.</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">8</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="param_category_id - Response Assertion" enabled="false">
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="979521418">${param_category_id}</stringProp>
               </collectionProp>
@@ -85,7 +187,7 @@
               <intProp name="Assertion.test_type">16</intProp>
             </ResponseAssertion>
             <hashTree/>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="CanRelist - Response Assertion">
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="CanRelist - Response Assertion" enabled="false">
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="2134361573">&quot;CanRelist&quot;:true</stringProp>
               </collectionProp>
@@ -109,7 +211,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+        <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
           <collectionProp name="Arguments.arguments">
             <elementProp name="host_tmsandbox" elementType="Argument">
               <stringProp name="Argument.name">host_tmsandbox</stringProp>
@@ -143,13 +245,13 @@
         <hashTree/>
         <ModuleController guiclass="ModuleControllerGui" testclass="ModuleController" testname="Module Controller">
           <collectionProp name="ModuleController.node_path">
+            <stringProp name="764597751">Test Plan</stringProp>
             <stringProp name="-1453577828">Assurity API Category Fragment</stringProp>
-            <stringProp name="-1453577828">Assurity API Category Fragment</stringProp>
-            <stringProp name="-1712404749">Test Fragment - Category</stringProp>
+            <stringProp name="1242355817">Category - Test Fragment</stringProp>
           </collectionProp>
         </ModuleController>
         <hashTree/>
-        <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report">
+        <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
