@@ -1,0 +1,50 @@
+{
+  "Category - HTTP Request" : {
+    "transaction" : "Category - HTTP Request",
+    "sampleCount" : 15,
+    "errorCount" : 2,
+    "errorPct" : 13.333333,
+    "meanResTime" : 214.4,
+    "medianResTime" : 183.0,
+    "minResTime" : 56.0,
+    "maxResTime" : 980.0,
+    "pct1ResTime" : 570.8000000000002,
+    "pct2ResTime" : 980.0,
+    "pct3ResTime" : 980.0,
+    "throughput" : 0.23535687948158723,
+    "receivedKBytesPerSec" : 0.6788728219682112,
+    "sentKBytesPerSec" : 0.03884307874256665
+  },
+  "Total" : {
+    "transaction" : "Total",
+    "sampleCount" : 15,
+    "errorCount" : 2,
+    "errorPct" : 13.333333,
+    "meanResTime" : 214.4,
+    "medianResTime" : 183.0,
+    "minResTime" : 56.0,
+    "maxResTime" : 980.0,
+    "pct1ResTime" : 570.8000000000002,
+    "pct2ResTime" : 980.0,
+    "pct3ResTime" : 980.0,
+    "throughput" : 0.23535687948158723,
+    "receivedKBytesPerSec" : 0.6788728219682112,
+    "sentKBytesPerSec" : 0.03884307874256665
+  },
+  "TradeMe_API_Category" : {
+    "transaction" : "TradeMe_API_Category",
+    "sampleCount" : 15,
+    "errorCount" : 2,
+    "errorPct" : 13.333333,
+    "meanResTime" : 214.4,
+    "medianResTime" : 183.0,
+    "minResTime" : 56.0,
+    "maxResTime" : 980.0,
+    "pct1ResTime" : 570.8000000000002,
+    "pct2ResTime" : 980.0,
+    "pct3ResTime" : 980.0,
+    "throughput" : 0.234375,
+    "receivedKBytesPerSec" : 0.6760406494140625,
+    "sentKBytesPerSec" : 0.0386810302734375
+  }
+}
