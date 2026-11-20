@@ -173,7 +173,7 @@ $(document).ready(function() {
     });
 
     // Creates APDEX table
-    createTable($("#apdexTable"), {"supportsControllersDiscrimination": true, "overall": {"data": [0.8333333333333334, 500, 1500, "Total"], "isController": false}, "titles": ["Apdex", "T (Toleration threshold)", "F (Frustration threshold)", "Label"], "items": [{"data": [0.8333333333333334, 500, 1500, "Category - HTTP Request"], "isController": false}, {"data": [0.8333333333333334, 500, 1500, "Assurity_API_Category"], "isController": true}]}, function(index, item){
+    createTable($("#apdexTable"), {"supportsControllersDiscrimination": true, "overall": {"data": [0.8333333333333334, 500, 1500, "Total"], "isController": false}, "titles": ["Apdex", "T (Toleration threshold)", "F (Frustration threshold)", "Label"], "items": [{"data": [0.8333333333333334, 500, 1500, "Category - HTTP Request"], "isController": false}, {"data": [0.8333333333333334, 500, 1500, "TradeMe_API_Category"], "isController": true}]}, function(index, item){
         switch(index){
             case 0:
                 item = item.toFixed(3);
@@ -187,7 +187,7 @@ $(document).ready(function() {
     }, [[0, 0]], 3);
 
     // Create statistics table
-    createTable($("#statisticsTable"), {"supportsControllersDiscrimination": true, "overall": {"data": ["Total", 15, 2, 13.333333333333334, 182.33333333333334, 61, 805, 113.0, 503.20000000000016, 805.0, 805.0, 0.234815278647464, 0.6781667041718847, 0.038753693448653724], "isController": false}, "titles": ["Label", "#Samples", "FAIL", "Error %", "Average", "Min", "Max", "Median", "90th pct", "95th pct", "99th pct", "Transactions/s", "Received", "Sent"], "items": [{"data": ["Category - HTTP Request", 15, 2, 13.333333333333334, 182.33333333333334, 61, 805, 113.0, 503.20000000000016, 805.0, 805.0, 0.234815278647464, 0.6781667041718847, 0.038753693448653724], "isController": false}, {"data": ["Assurity_API_Category", 15, 2, 13.333333333333334, 182.33333333333334, 61, 805, 113.0, 503.20000000000016, 805.0, 805.0, 0.23427982382157247, 0.676620264619061, 0.038665322486177496], "isController": true}]}, function(index, item){
+    createTable($("#statisticsTable"), {"supportsControllersDiscrimination": true, "overall": {"data": ["Total", 15, 2, 13.333333333333334, 214.4, 56, 980, 183.0, 570.8000000000002, 980.0, 980.0, 0.23535687948158723, 0.6788728219682112, 0.03884307874256665], "isController": false}, "titles": ["Label", "#Samples", "FAIL", "Error %", "Average", "Min", "Max", "Median", "90th pct", "95th pct", "99th pct", "Transactions/s", "Received", "Sent"], "items": [{"data": ["Category - HTTP Request", 15, 2, 13.333333333333334, 214.4, 56, 980, 183.0, 570.8000000000002, 980.0, 980.0, 0.23535687948158723, 0.6788728219682112, 0.03884307874256665], "isController": false}, {"data": ["TradeMe_API_Category", 15, 2, 13.333333333333334, 214.4, 56, 980, 183.0, 570.8000000000002, 980.0, 980.0, 0.234375, 0.6760406494140625, 0.0386810302734375], "isController": true}]}, function(index, item){
         switch(index){
             // Errors pct
             case 3:

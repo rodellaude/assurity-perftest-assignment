@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Assurity API Test Plan">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="TradeMe API Test Plan">
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
-      <boolProp name="TestPlan.functional_mode">false</boolProp>
-      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
     </TestPlan>
     <hashTree>
       <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="Global - User Defined Variables">
@@ -68,7 +66,7 @@
         </collectionProp>
       </Arguments>
       <hashTree/>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Assurity_API" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="TradeMe_API" enabled="true">
         <stringProp name="ThreadGroup.num_threads">${users_api_category}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${rampup_api_category}</stringProp>
         <stringProp name="ThreadGroup.duration">${duration_api_category}</stringProp>
@@ -81,7 +79,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="Category - CSV Data Set Config" enabled="true">
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="Category - CSV Data Set Config">
           <stringProp name="delimiter">,</stringProp>
           <stringProp name="fileEncoding"></stringProp>
           <stringProp name="filename">./data/tmsandbox_category.csv</stringProp>
@@ -101,15 +99,18 @@
               <stringProp name="-1056372272">${tph_api_category}</stringProp>
             </collectionProp>
           </collectionProp>
+          <stringProp name="TestPlan.comments">Purpose: Paces and routes child controller execution to match the target Transactions Per Hour (${tph_api_category}).
+Usage: Assigns the configured TPH weight (default 600 TPH = 10 requests/min) to &quot;Category - Include Controller&quot; so the active VUsers maintain the required throughput rather than executing unthrottled.
+Dependency: Requires jmeter-plugin/jmeter-tph-switch-controller-1.0-SNAPSHOT.jar in &lt;JMETER_HOME&gt;/lib/ext/.</stringProp>
         </com.performance.jmeter.plugins.control.TphSwitchController>
         <hashTree>
           <IncludeController guiclass="IncludeControllerGui" testclass="IncludeController" testname="Category - Include Controller" enabled="true">
-            <stringProp name="IncludeController.includepath">./fragments/assurity_api_category.jmx</stringProp>
+            <stringProp name="IncludeController.includepath">./fragments/trademe_api_category.jmx</stringProp>
           </IncludeController>
           <hashTree/>
         </hashTree>
       </hashTree>
-      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report">
+      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="false">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>

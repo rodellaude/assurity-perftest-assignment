@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Assurity API Category Fragment">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="TradeMe API Category Fragment">
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
@@ -65,7 +65,7 @@ Note: To ensure you can easily run and review this script locally without needin
             <hashTree/>
           </hashTree>
         </hashTree>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="${__threadGroupName}_Category">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="${__threadGroupName}_Category" enabled="true">
           <boolProp name="TransactionController.parent">true</boolProp>
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
@@ -83,7 +83,7 @@ Note: To ensure you can easily run and review this script locally without needin
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="Category - JSR223 Assertion" enabled="true">
+            <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="Category - JSR223 Assertion">
               <stringProp name="cacheKey">true</stringProp>
               <stringProp name="filename"></stringProp>
               <stringProp name="parameters"></stringProp>
@@ -170,9 +170,9 @@ if (threadGroupName != &quot;Debug&quot;) {
         testStartMs = System.currentTimeMillis()
     }
 
-    String runStartStamp = new SimpleDateFormat(&quot;yyyyMMdd_HHmmss&quot;).format(new Date(testStartMs))
+    String runStartStamp = new SimpleDateFormat(&quot;yyyyMMdd-HHmmss&quot;).format(new Date(testStartMs))
 
-    File csvFile = new File(logDir, &quot;assurity_api_category_log_${runStartStamp}.csv&quot;)
+    File csvFile = new File(logDir, &quot;trademe_api_category_log_${runStartStamp}.csv&quot;)
     String csvFilePath = csvFile.getAbsolutePath()
 
     synchronized(csvFilePath.intern()) {
@@ -197,7 +197,7 @@ if (threadGroupName != &quot;Debug&quot;) {
           </hashTree>
         </hashTree>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Debug">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Debug" enabled="true">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <intProp name="ThreadGroup.ramp_time">1</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -285,7 +285,7 @@ if (threadGroupName != &quot;Debug&quot;) {
           <stringProp name="filename"></stringProp>
         </ResultCollector>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
