@@ -14,11 +14,11 @@ assurity-perftest-assignment/
 ├── data/
 │   └── tmsandbox_category.csv             # Input Category IDs (6327 to 6336)
 ├── docs/
-│   └── images/                            # Power BI report charts
+│   └── images/                            # Performance charts
 ├── jmeter-plugin/
 │   └── jmeter-tph-switch-controller-1.0-SNAPSHOT.jar  # Custom TPH Switch Controller plugin
 ├── logs/
-│   ├── trademe-api_1-min-test_20261120-123711.csv     # Raw JMeter results (Power BI ready)
+│   ├── trademe-api_1-min-test_20261120-123711.csv     # Raw JMeter results
 │   └── trademe-api_category_log_20261120-123742.csv   # Extracted Promotion ID & Price output
 ├── report/                                # JMeter HTML Dashboard Report (report/index.html)
 ├── run_test.bat                           # Helper script to run non-GUI tests with a dynamic timestamp
